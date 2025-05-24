@@ -1,5 +1,60 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+﻿# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
 
-/impressao_automatica.sln
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Auto-generated files
+*.Generated.cs
+
+# Backup & temporary files
+*.bak
+*.tmp
+*.temp
+*.cache
+*.dbmdl
+
+# VS Code files
+.vscode/
+
+# Visual Studio settings folder
+.vs/
+
+# NuGet
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+
+# Windows Form Designer files
+*.Designer.cs
+
+# Publish folder
+publish/
+
+# Others
+_ReSharper*/
+*.DotSettings.user
+
+# Ignore local test results
+TestResults/
+
+# Ignore node modules if any frontend is involved
+node_modules/
+
+# Ignore .NET Core specific
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Ignore JetBrains Rider settings
+.idea/
+
+# Ignore crash dumps
+*.dmp
