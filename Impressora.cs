@@ -1,4 +1,5 @@
 ﻿using impressao_automatica.Enumeradores;
+using impressao_automatica.Model;
 using System.Drawing.Printing;
 using System.Management;
 
@@ -7,10 +8,13 @@ namespace impressao_automatica
     public class Impressora
     {
         public string Nome { get; set; }
+        public SituacaoImpressoraEnum Situacao { get; set; }
+        public Pedido? Pedido { get; private set; }
 
         public Impressora(string nome)
         {
             Nome = nome;
+            Situacao = SituacaoImpressoraEnum.Desconhecido;
         }
 
         public Impressora()
@@ -34,19 +38,67 @@ namespace impressao_automatica
             return impressora.PrinterName;
         }
 
-        public void Imprimir(string pedido, string impressora)
+        public void Imprimir()
         {
-            // Lógica para imprimir o pedido
-            // Isso pode incluir a formatação do pedido e o envio para a impressora selecionada
+            //se pedido for nulo, não imprime
+            if (Pedido == null) return;
+
+            //se pedido nao for nulo, imprime
+            using (PrintDocument printDocument = new PrintDocument())
+            {
+                printDocument.PrinterSettings.PrinterName = Nome;
+
+                printDocument.PrintPage += (sender, e) =>
+                {
+                    e.Graphics.DrawString(Pedido.ToString(), new Font("Arial", 12), Brushes.Black, new PointF(100, 100));
+                };
+
+                try
+                {
+                    printDocument.Print();
+                }
+                catch (Exception ex)
+                {
+                    // Tratar exceção de impressão
+                    Console.WriteLine($"Erro ao imprimir: {ex.Message}");
+                }
+            }
         }
 
-        public SituacaoImpressoraEnum ObterStatusImpressora(string nomeImpressora)
+        public async Task Imprimir(Pedido pedido)
+        {
+            //se pedido for nulo, não imprime
+            if (pedido == null) return;
+
+            //se pedido nao for nulo, imprime
+            using (PrintDocument printDocument = new PrintDocument())
+            {
+                printDocument.PrinterSettings.PrinterName = Nome;
+
+                printDocument.PrintPage += (sender, e) =>
+                {
+                    e.Graphics.DrawString(pedido.TextoImpressao, new Font("Arial", 12), Brushes.Black, new PointF(100, 100));
+                };
+
+                try
+                {
+                    printDocument.Print();
+                }
+                catch (Exception ex)
+                {
+                    // Tratar exceção de impressão
+                    Console.WriteLine($"Erro ao imprimir: {ex.Message}");
+                }
+            }
+        }
+
+        public void AtualizarSituacao()
         {
             var status = SituacaoImpressoraEnum.Desconhecido;
 
             try
             {
-                string query = $"SELECT * FROM Win32_Printer WHERE Name = '{nomeImpressora.Replace("\\", "\\\\")}'";
+                string query = $"SELECT * FROM Win32_Printer WHERE Name = '{Nome.Replace("\\", "\\\\")}'";
 
                 using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(query))
                 {
@@ -54,11 +106,10 @@ namespace impressao_automatica
                     {
                         var printerStatus = printer["PrinterStatus"];
 
-                        // Pode usar PrinterStatus ou ExtendedPrinterStatus para mais detalhes
                         int statusCodigo = Convert.ToInt32(printer["PrinterStatus"]);
 
-                        
-                        status = (SituacaoImpressoraEnum)statusCodigo;
+
+                        Situacao = (SituacaoImpressoraEnum)statusCodigo;
                     }
                 }
             }
@@ -66,8 +117,42 @@ namespace impressao_automatica
             {
                 status = SituacaoImpressoraEnum.Desconhecido;
             }
+        }
 
-            return status;
+        public void AdicionarPedido(Pedido pedido)
+        {
+            if (pedido == null) throw new ArgumentNullException(nameof(pedido), "O pedido não pode ser nulo.");
+            Pedido = pedido;
+            Situacao = SituacaoImpressoraEnum.Imprimindo;
+        }
+
+        //remover pedido   
+        public void RemoverPedido()
+        {
+            Pedido = null;
+            Situacao = SituacaoImpressoraEnum.Aguardando;
+        }
+
+        public void AlterarNomeImpressora(string novoNome)
+        {
+            if (string.IsNullOrEmpty(novoNome))
+            {
+                throw new ArgumentException("O nome da impressora não pode ser nulo ou vazio.", nameof(novoNome));
+            }
+
+            Nome = novoNome;
+        }
+
+        // Verifica se a impressora está pronta para imprimir
+        public bool EstaProntaParaImprimir()
+        {
+            return Situacao == SituacaoImpressoraEnum.Aguardando;
+        }
+
+        // Verifica se a impressora está imprimindo
+        public bool EstaImprimindo()
+        {
+            return Situacao == SituacaoImpressoraEnum.Imprimindo;
         }
     }
 }

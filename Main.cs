@@ -19,6 +19,8 @@ namespace impressao_automatica
             }
 
             comboBoxImpressoras.SelectedItem = _sistema.Impressora.Nome;
+
+            this._sistema = new Sistema();
         }
     }
 }

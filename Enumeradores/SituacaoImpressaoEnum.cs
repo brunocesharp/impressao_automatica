@@ -5,8 +5,8 @@
         Offline = 0,
         Pausada = 1,
         Imprimindo = 2,
-        Desconhecido = 3,
-        Aguardando = 4,
+        Desconhecido = 4,
+        Aguardando = 3,
         Erro = 5,
     }
 }
