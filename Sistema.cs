@@ -8,11 +8,8 @@ namespace impressao_automatica
     {
         // Propriedades
         public SituacaoSistemaEnum Situacao { get; set; }
-        public Impressora Impressora { get; set; } = new Impressora();
-        public bool Ativo { get; set; } = false;
+        private Impressora Impressora { get; set; } = new Impressora();
         public PedidoApiService _pedidoApiService { get; set; }
-        public IList<Pedido> _filaImpressao { get; set; } = new List<Pedido>();
-        public IList<Pedido> listaRetornoAPIFake { get; set; } = new List<Pedido>();
 
         public Sistema()
         {
@@ -30,7 +27,6 @@ namespace impressao_automatica
             else
             {
                 this.Situacao = SituacaoSistemaEnum.Parado;
-                LimparFila();
             }
         }
 
@@ -51,60 +47,57 @@ namespace impressao_automatica
 
             this.Impressora.Nome = nomeImpressora;
         }
-
-        //Imprimir proximo pedido
-        public async Task ImprimirProximoPedidoAsync()
+        public Impressora ObterImpressora()
         {
-            if (_filaImpressao.Any())
-            {
-                var pedido = _filaImpressao.OrderByDescending(d => d.Codigo).FirstOrDefault();
-                if (pedido != null)
-                {
-                    Impressora.AdicionarPedido(pedido);
-                    var atualizado = await _pedidoApiService.AlterarStatusPedidoAsync(pedido.Codigo.ToString());
-                    if (atualizado)
-                        _filaImpressao.Remove(pedido);
-
-                }
-            }
+            return this.Impressora;
         }
 
-        public async Task ListarPedidos()
+        public async Task<string> ImprimirProximoPedidoAsync()
         {
+            Impressora.Situacao = SituacaoImpressoraEnum.Imprimindo;
+
             var pedidos = await _pedidoApiService.ObterPedidosPendentesAsync();
-            //filtrar os pedidos com os pedidos na _filaImpressao
-            pedidos = pedidos.Where(p => !_filaImpressao.Any(f => f.Codigo == p.Codigo)).ToList();
+            var proximoPedido = pedidos.OrderByDescending(p => p.Data).FirstOrDefault();
 
-            if (!pedidos.Any()) return;
-
-            foreach (var pedido in pedidos.OrderBy(d => d.CodigoFila))
+            if (proximoPedido == null)
             {
-                _filaImpressao.Add(pedido);
-            }
+                Impressora.Situacao = SituacaoImpressoraEnum.Aguardando;
+                return "Aguardado pedido...";
+            };
+
+            await Impressora.Imprimir(proximoPedido);
+
+            await _pedidoApiService.AlterarStatusPedidoAsync(proximoPedido.Codigo.ToString());
+
+            Impressora.Situacao = SituacaoImpressoraEnum.Aguardando;
+
+            return proximoPedido.ToString();
+
         }
 
-        public async Task Imprimir(string codigo)
+        public async Task<string> Imprimir(string codigo)
         {
             //get pedido by codigo
             var pedido = await _pedidoApiService.ObterPedidoPorCodigoAsync(codigo);
-            await Impressora.Imprimir(pedido);
+            if (pedido == null)
+            {
+                MessageBox.Show($"Pedido com código {codigo} não encontrado.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return $"Pedido com código {codigo} não encontrado.";
+            }
+            await Impressora.Imprimir(pedido!);
 
+            return pedido.ToString();
         }
 
-        public void LimparFila()
+        public async Task Imprimir(Pedido pedido)
         {
-            // Lógica para limpar a fila de impressão
-            // Isso pode incluir a remoção de todos os pedidos da fila ou a limpeza de um pedido específico
-            _filaImpressao.Clear();
+            if (pedido == null)
+            {
+                MessageBox.Show("Ocorreu um erro ao imprimir o pedido.", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            await Impressora.Imprimir(pedido!);
+
         }
-
-        private void AdicionarPedidoFila(Pedido pedido)
-        {
-            _filaImpressao.Add(pedido);
-            //var json = JsonSerializer.Serialize(pedido);
-            //File.AppendAllText(Application.StartupPath, json);
-        }
-
-
     }
 }

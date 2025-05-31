@@ -11,12 +11,6 @@ namespace impressao_automatica
         public SituacaoImpressoraEnum Situacao { get; set; }
         public Pedido? Pedido { get; private set; }
 
-        public Impressora(string nome)
-        {
-            Nome = nome;
-            Situacao = SituacaoImpressoraEnum.Desconhecido;
-        }
-
         public Impressora()
         {
             Nome = ImpressoraPadrao();
@@ -50,7 +44,7 @@ namespace impressao_automatica
 
                 printDocument.PrintPage += (sender, e) =>
                 {
-                    e.Graphics.DrawString(Pedido.ToString(), new Font("Arial", 12), Brushes.Black, new PointF(100, 100));
+                    e.Graphics.DrawString(Pedido.TextoImpressao, new Font("Arial", 12), Brushes.Black, new PointF(100, 100));
                 };
 
                 try
@@ -86,73 +80,10 @@ namespace impressao_automatica
                 }
                 catch (Exception ex)
                 {
-                    // Tratar exceção de impressão
-                    Console.WriteLine($"Erro ao imprimir: {ex.Message}");
+                    //MessageBox de erro com a mensagem "Ocorreu um erro ao imprimir: {ex.Message}"
+                    MessageBox.Show($"Ocorreu um erro ao imprimir: {ex.Message}", "Erro de Impressão", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-        }
-
-        public void AtualizarSituacao()
-        {
-            var status = SituacaoImpressoraEnum.Desconhecido;
-
-            try
-            {
-                string query = $"SELECT * FROM Win32_Printer WHERE Name = '{Nome.Replace("\\", "\\\\")}'";
-
-                using (ManagementObjectSearcher searcher = new ManagementObjectSearcher(query))
-                {
-                    foreach (ManagementObject printer in searcher.Get())
-                    {
-                        var printerStatus = printer["PrinterStatus"];
-
-                        int statusCodigo = Convert.ToInt32(printer["PrinterStatus"]);
-
-
-                        Situacao = (SituacaoImpressoraEnum)statusCodigo;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                status = SituacaoImpressoraEnum.Desconhecido;
-            }
-        }
-
-        public void AdicionarPedido(Pedido pedido)
-        {
-            if (pedido == null) throw new ArgumentNullException(nameof(pedido), "O pedido não pode ser nulo.");
-            Pedido = pedido;
-            Situacao = SituacaoImpressoraEnum.Imprimindo;
-        }
-
-        //remover pedido   
-        public void RemoverPedido()
-        {
-            Pedido = null;
-            Situacao = SituacaoImpressoraEnum.Aguardando;
-        }
-
-        public void AlterarNomeImpressora(string novoNome)
-        {
-            if (string.IsNullOrEmpty(novoNome))
-            {
-                throw new ArgumentException("O nome da impressora não pode ser nulo ou vazio.", nameof(novoNome));
-            }
-
-            Nome = novoNome;
-        }
-
-        // Verifica se a impressora está pronta para imprimir
-        public bool EstaProntaParaImprimir()
-        {
-            return Situacao == SituacaoImpressoraEnum.Aguardando;
-        }
-
-        // Verifica se a impressora está imprimindo
-        public bool EstaImprimindo()
-        {
-            return Situacao == SituacaoImpressoraEnum.Imprimindo;
         }
     }
 }

@@ -7,7 +7,6 @@ namespace impressao_automatica
     public class PedidoApiService
     {
         private readonly HttpClient _httpClient;
-        private long _codigoFila = 0;
 
         public PedidoApiService()
         {
@@ -81,9 +80,6 @@ namespace impressao_automatica
                             Codigo = long.Parse(jsonElement.GetProperty("id").ToString()!),
                             TextoImpressao = jsonElement.GetProperty("text").ToString()!,
                             Data = jsonElement.GetProperty("operationDate").GetDateTime(),
-                            Situacao = SituacaoPedidoEnum.Pendente,
-                            Enfileirado = false,
-                            CodigoFila = _codigoFila++ // Incrementa o código da fila
                         };
 
                         return pedido;
@@ -99,23 +95,6 @@ namespace impressao_automatica
             return null;
         }
 
-        private async Task<IEnumerable<Pedido>> ListarPedidoFake()
-        {
-            var listaFake = new List<Pedido>();
-
-            listaFake.Add(new Pedido
-            {
-                CodigoFila = new Random().Next(1, 99),
-                Numero = 123456789 + new Random().Next(1, 20),
-                Situacao = SituacaoPedidoEnum.Pendente,
-                Data = DateTime.Now.AddSeconds(new Random().Next(1, 60)),
-            });
-
-            return listaFake;
-            var json = JsonSerializer.Serialize(listaFake);
-            return ConverterLista(json);
-        }
-
         private IEnumerable<Pedido> ConverterLista(string json)
         {
             using JsonDocument doc = JsonDocument.Parse(json);
@@ -125,16 +104,12 @@ namespace impressao_automatica
                 var texto = pedido.GetProperty("text").ToString();
                 var operationDate = pedido.GetProperty("operationDate").GetDateTime();
 
-                _codigoFila++;
 
                 yield return new Pedido
                 {
                     Codigo = long.Parse(id!),
                     TextoImpressao = texto!,
                     Data = operationDate,
-                    CodigoFila = _codigoFila,
-                    Situacao = SituacaoPedidoEnum.Pendente,
-                    Enfileirado = false
                 };
             }
         }

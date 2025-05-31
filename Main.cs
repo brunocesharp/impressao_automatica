@@ -13,14 +13,11 @@ namespace impressao_automatica
             this.Name = "Serviço de Automatização";
 
             var impressoras = Impressora.Listar();
-            foreach (var impressora in impressoras)
-            {
-                comboBoxImpressoras.Items.Add(impressora);
-            }
-
-            comboBoxImpressoras.SelectedItem = _sistema.Impressora.Nome;
+            comboBoxImpressoras.Items.AddRange(impressoras.ToArray());
 
             this._sistema = new Sistema();
+
+            comboBoxImpressoras.SelectedItem = _sistema.ObterImpressora()?.Nome;
         }
     }
 }
